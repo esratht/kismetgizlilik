@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#061430">
+<link rel="icon" href="icons/icon-192.png">
+<title>Kısmet</title>
+<style>html,body{margin:0}[hidden]{display:none!important}body{box-sizing:border-box;padding-top:var(--safe-top,env(safe-area-inset-top,0px))}</style>
+</head>
+<body>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+/* Layout: one phone-sized night sky; screens swap in place (intro → 8 cards → printer → result).
+   Single deliberate dark world: cream paper is the only light object, violet is the one accent. */
+:root{
+  --night:#061430; --night-2:#071A3A; --ink:#ECFBF7; --muted:#B4C9D4; --line:rgba(142,226,214,.22); --gold:#E8C77A;
+  --accent:#8EE2D6; --accent-ink:#06263A;
+  --paper:#FBF6EA; --paper-ink:#221E2E; --paper-line:#CFC6B4; --seal:#A33E1E;
+  --f-display:"Cormorant Garamond","Iowan Old Style",Georgia,serif;
+  --f-body:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:#050F28;color:var(--ink);font:16px/1.45 var(--f-body);display:flex;justify-content:center;align-items:center;overflow:hidden;-webkit-font-smoothing:antialiased}
+@media (max-width:479px),(max-height:699px){body{background:var(--night)}}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+#app{position:relative;width:100%;height:100%;max-width:390px;overflow:hidden;overflow:clip;background-color:#061430;background-image:radial-gradient(ellipse 85% 75% at 50% 62%,transparent 45%,rgba(3,10,28,.55) 100%),radial-gradient(ellipse 90% 55% at 50% 100%,rgba(14,116,144,.55),transparent 75%),radial-gradient(ellipse 70% 40% at 15% 25%,rgba(30,90,170,.35),transparent 70%),radial-gradient(ellipse 70% 40% at 90% 40%,rgba(45,160,120,.22),transparent 70%),linear-gradient(180deg,#050F28 0%,#071A3A 55%,#08284A 100%)}
+@media (min-width:480px) and (min-height:700px){#app{height:min(844px,calc(100% - 32px));border-radius:44px;box-shadow:0 0 0 10px #000,0 30px 80px rgba(0,0,0,.6)}}
+#sky{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:24px 22px 32px;display:flex;flex-direction:column;scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.screen>*{flex-shrink:0}
+.screen[hidden]{display:none}
+.screen{text-shadow:0 0 2px rgba(3,12,32,.95),0 1px 4px rgba(3,12,32,.9),0 0 10px rgba(3,12,32,.7)}
+.screen :is(.receipt,.coupon,.mini,.goal.done,input,.btn-primary,.seg button[aria-checked="true"],.lang button[aria-checked="true"]){text-shadow:none}
+.fade{animation:fade .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes fade{from{opacity:0;transform:translateY(14px)}}
+
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:12px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+.brand i{width:9px;height:9px;border-radius:50%;background:var(--accent)}
+h1{font-family:var(--f-display);font-weight:700;font-size:42px;line-height:1.02;letter-spacing:-.005em;margin:26px 0 14px;text-wrap:balance}
+h1 em{font-style:normal;color:var(--gold)}
+.lead{color:var(--muted);margin:0;font-size:16px;max-width:32ch}
+.toprow{display:flex;gap:8px;align-items:center;margin-top:4px}
+.toprow .seg{flex:1}
+.seg,.lang{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04)}
+.lang button{width:40px;height:40px;border-radius:999px;font:700 12px var(--f-mono);color:var(--muted)}
+.lang button[aria-checked="true"]{background:var(--ink);color:var(--night)}
+.seg button{height:40px;padding:0 6px;border-radius:999px;font-weight:700;font-size:14px;color:var(--muted);transition:all .2s}
+.seg button[aria-checked="true"]{background:var(--accent);color:var(--accent-ink)}
+.meta{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+.meta span{font-family:var(--f-mono);font-size:12px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);color:var(--ink)}
+.preview{margin:26px auto 0;width:250px;transform:rotate(-4deg);position:relative}
+.preview .mini{background:var(--paper);color:var(--paper-ink);font-family:var(--f-mono);font-size:12px;line-height:1.6;padding:14px 14px 18px;box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.preview .mini b{display:block;text-align:center;letter-spacing:.14em;font-size:12px;margin-bottom:6px}
+.preview .mini .r{display:flex;justify-content:space-between}
+.preview .mini::after,.receipt::after,.coupon::after{content:"";position:absolute;left:0;right:0;bottom:-8px;height:8px;background:conic-gradient(from -45deg at bottom,transparent 90deg,var(--paper) 0) 0 0/14px 100%}
+.field{margin-top:28px;display:grid;gap:8px}
+.field label{font-weight:700;font-size:14px}
+.field input{width:100%;height:52px;border-radius:16px;border:1.5px solid var(--line);background:rgba(255,255,255,.04);color:var(--ink);font:600 17px var(--f-body);padding:0 16px}
+.field input::placeholder{color:var(--muted);font-weight:500}
+.field input:focus{outline:none;border-color:var(--accent)}
+.signs{display:flex;gap:8px;overflow-x:auto;margin:0 -22px;padding:2px 22px 4px;scrollbar-width:none}
+.signs::-webkit-scrollbar{display:none}
+.sign{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;width:62px;padding:9px 0;border-radius:14px;border:1.5px solid var(--line);font-size:11px;color:var(--muted)}
+.sign b{font-size:20px;color:var(--ink);font-weight:400;line-height:1.1}
+.sign[aria-pressed="true"]{border-color:var(--accent);background:rgba(142,226,214,.14);color:var(--ink)}
+.spacer{flex:1;min-height:20px}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:58px;border-radius:999px;font-weight:800;font-size:16px;font-family:var(--f-body);letter-spacing:.01em;transition:transform .12s,opacity .2s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:var(--accent-ink);box-shadow:0 8px 24px -10px rgba(45,212,191,.55)}
+.btn-primary:disabled{opacity:.35;box-shadow:none}
+.btn-ghost{border:1.5px solid var(--line);color:var(--ink);font-family:var(--f-body);font-weight:700}
+.err{color:#FF8A7A;font-size:13px;font-weight:600;margin:0}
+.fine{font-size:12px;color:var(--muted);text-align:center;margin:14px 0 0}
+
+/* question cards */
+.qtop{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.icon{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);background:rgba(255,255,255,.04)}
+.icon svg{width:20px;height:20px}
+.dots{display:flex;gap:6px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--line);transition:all .3s}
+.dots i.on{background:var(--accent)}
+.dots i.now{width:22px;border-radius:4px}
+.qnum{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.14em;margin-top:34px}
+.qcard h2{font-family:var(--f-display);font-weight:700;font-size:33px;line-height:1.08;margin:10px 0 24px;letter-spacing:-.01em;text-wrap:balance}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opts.cols3{grid-template-columns:repeat(3,1fr)}
+.opt{min-height:62px;padding:12px 14px;border-radius:18px;border:1.5px solid var(--line);background:rgba(9,30,66,.6);text-align:left;font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:10px;transition:all .18s}
+.opts.cols3 .opt{justify-content:center;text-align:center;min-height:52px;font-size:14.5px}
+.opt span{font-size:20px}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:rgba(142,226,214,.16);transform:translateY(-2px)}
+.qin-r{animation:inR .4s cubic-bezier(.2,.8,.2,1)}
+@keyframes inR{from{opacity:0;transform:translateX(36px)}}
+
+/* printer + receipt */
+.printer{position:sticky;top:-24px;z-index:3;margin:-24px -22px 0;padding:22px 22px 0;background:linear-gradient(#152040 85%,transparent)}
+.slotbox{height:54px;border-radius:22px 22px 12px 12px;background:linear-gradient(180deg,#0E2F55,#071A3A);border:1px solid rgba(142,226,214,.22);display:flex;align-items:center;justify-content:space-between;padding:0 18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 10px 30px rgba(0,0,0,.4)}
+.slotbox .lbl{font-family:var(--f-mono);font-size:12px;letter-spacing:.2em;color:var(--gold)}
+.leds{display:flex;gap:6px}.leds i{width:7px;height:7px;border-radius:50%;background:#8EE2D6;opacity:.35}
+.printing .leds i{animation:blink .3s infinite}.leds i:nth-child(2){animation-delay:.1s}.leds i:nth-child(3){animation-delay:.2s}
+@keyframes blink{50%{opacity:1}}
+.slot{height:12px;margin:0 20px;background:#060A14;border-radius:0 0 8px 8px;box-shadow:inset 0 4px 5px rgba(0,0,0,.7)}
+.paperclip{overflow:hidden;margin:-4px 12px 0;padding-bottom:16px}
+.paper{transform-origin:top}
+.paper.print{animation:printout var(--dur,3s) cubic-bezier(.45,.05,.35,1) both}
+@keyframes printout{from{transform:translateY(-101%)}}
+.receipt,.coupon{position:relative;background:var(--paper);color:var(--paper-ink);font-family:var(--f-mono);font-size:12.5px;line-height:1.6;padding:20px 18px 18px}
+.receipt .c{text-align:center}
+.receipt .t{font-weight:700;letter-spacing:.2em;font-size:13.5px}
+.receipt hr,.coupon hr{border:0;border-top:1.5px dashed var(--paper-line);margin:10px 0}
+.kv{display:flex;justify-content:space-between;gap:12px}
+.kv span:first-child{opacity:.72}
+.kv span:last-child{text-align:right;font-weight:700}
+.total{font-weight:700}
+.tear{position:relative;height:26px;margin:0 -2px;display:flex;align-items:center;gap:8px;color:var(--muted);font-family:var(--f-mono);font-size:12px}
+.tear::before{content:"";flex:1;border-top:2px dashed rgba(243,238,255,.35)}
+.coupon{margin-top:8px;text-align:center;border:2px solid var(--paper)}
+.coupon .cin{border:1.5px dashed var(--paper-line);padding:14px 10px 12px;position:relative}
+.coupon .ck{padding:0 62px;line-height:1.5;font-size:12px;letter-spacing:.2em;opacity:.7}
+.coupon .cw{font-family:var(--f-display);font-weight:700;font-size:38px;letter-spacing:.04em;margin:6px 0 4px;color:var(--paper-ink)}
+.coupon .use{font-size:12px;opacity:.8;max-width:26ch;margin:0 auto}
+.seal{position:absolute;right:-22px;top:-50px;width:88px;height:88px;border-radius:50%;border:3px double var(--seal);color:var(--seal);display:grid;place-items:center;text-align:center;font-weight:700;font-size:11px;letter-spacing:.14em;line-height:1.3;transform:rotate(-14deg);background:rgba(251,246,234,.6)}
+.paper.print .seal{animation:stamp .45s calc(var(--dur,3s) + .1s) cubic-bezier(.2,.9,.3,1) both}
+@keyframes stamp{from{transform:scale(2) rotate(-30deg);opacity:0}}
+.after{opacity:0;transform:translateY(10px);transition:all .5s;display:grid;gap:10px;margin-top:26px;pointer-events:none}
+.after.show{opacity:1;transform:none;pointer-events:auto}
+
+/* share sheet */
+#sheet{position:absolute;inset:0;z-index:20;background:rgba(5,8,15,.84);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;flex-direction:column;align-items:center;padding:22px;gap:14px;overflow-y:auto}
+#sheet[hidden]{display:none}
+#sheet img{width:min(68%,250px);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.55);-webkit-touch-callout:default}
+#sheet p{margin:0;color:var(--muted);font-size:13.5px;text-align:center;max-width:30ch}
+#sheet .row{display:grid;gap:10px;width:100%}
+.toast{position:absolute;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;z-index:30;background:var(--ink);color:var(--night);padding:11px 16px;border-radius:12px;font-weight:700;font-size:14px;transition:all .3s;pointer-events:none;width:max-content;max-width:calc(100% - 40px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* tabs + goals */
+#tabs{position:absolute;left:14px;right:14px;bottom:calc(14px + var(--safe-bottom,env(safe-area-inset-bottom,0px)));z-index:8;display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:5px;border-radius:22px;background:rgba(6,20,46,.92);border:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+#tabs[hidden]{display:none}
+#tabs button{height:46px;border-radius:17px;font-weight:700;font-size:14.5px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:8px}
+#tabs button svg{width:18px;height:18px}
+#tabs button[aria-current="page"]{background:rgba(142,226,214,.16);color:var(--accent)}
+.withtabs{padding-bottom:104px!important}
+.g-head h1{margin:14px 0 4px}
+.g-sub{color:var(--muted);font-size:14px;margin:0}
+.g-sec{font-family:var(--f-mono);font-size:12px;letter-spacing:.16em;color:var(--muted);margin:26px 0 10px;text-transform:uppercase}
+.tpl{display:flex;flex-wrap:wrap;gap:8px}
+.tpl button{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:rgba(255,255,255,.035);font-weight:700;font-size:14px}
+.tpl button.custom{border-style:dashed;color:var(--accent);border-color:rgba(142,226,214,.5)}
+.g-empty{border:1.5px dashed var(--line);border-radius:18px;padding:18px;color:var(--muted);font-size:14.5px;margin-top:18px}
+.glist{display:grid;gap:12px}
+.goal{border-radius:20px;border:1px solid var(--line);background:rgba(9,30,66,.72);box-shadow:0 0 0 1px rgba(142,226,214,.06) inset,0 8px 24px -12px rgba(14,116,144,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:16px;display:grid;gap:12px}
+.goal .gt{display:flex;align-items:center;gap:12px}
+.goal .ge{font-size:26px;line-height:1}
+.goal .gn{font-weight:800;font-size:16.5px;line-height:1.25}
+.goal .gd{font-size:12.5px;color:var(--muted);font-family:var(--f-mono)}
+.gbar{height:10px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden}
+.gbar i{display:block;height:100%;background:var(--accent);border-radius:5px;transition:width .4s cubic-bezier(.2,.8,.2,1)}
+.gprog{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.gnum{font-family:var(--f-mono);font-weight:700;font-variant-numeric:tabular-nums}
+.step{display:flex;gap:8px}
+.step button{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);font-size:20px;font-weight:700;display:grid;place-items:center}
+.gact{display:flex;gap:8px}
+.gact .btn{height:46px;font-size:14.5px}
+.btn-small{height:46px;padding:0 16px;width:auto;font-size:14px}
+.goal.done{background:var(--paper);color:var(--paper-ink);border-color:var(--paper)}
+.goal.done .gd{color:#5E5866}
+.goal.done .btn-ghost{color:var(--paper-ink);border-color:#CFC6B4}
+.emo{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.emo button{height:44px;border-radius:12px;border:1.5px solid var(--line);font-size:21px}
+.emo button[aria-checked="true"]{border-color:var(--accent);background:rgba(142,226,214,.16)}
+.gform{border-radius:20px;border:1.5px solid rgba(142,226,214,.45);background:rgba(142,226,214,.06);padding:16px;display:grid;gap:14px;margin-top:18px}
+.gform .row2{display:grid;grid-template-columns:110px 1fr;gap:8px}
+.gform input{width:100%;height:50px;border-radius:14px;border:1.5px solid var(--line);background:rgba(255,255,255,.05);color:var(--ink);font:600 16px var(--f-body);padding:0 14px}
+.gform input:focus{outline:none;border-color:var(--accent)}
+.gform label{font-weight:700;font-size:13.5px}
+.dl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dl button{height:44px;border-radius:12px;border:1.5px solid var(--line);font-weight:700;font-size:14px}
+.dl button[aria-pressed="true"]{border-color:var(--accent);background:rgba(142,226,214,.16)}
+.win{text-align:center;font-family:var(--f-display);font-weight:700;font-size:28px;letter-spacing:.02em;margin:6px 0 2px;line-height:1.15;word-break:break-word}
+.bigseal{margin:14px auto 4px;width:max-content;max-width:100%;border:3px double var(--seal);color:var(--seal);border-radius:10px;padding:8px 16px;text-align:center;transform:rotate(-4deg);font-weight:700;letter-spacing:.16em;font-size:17px}
+.paper.print .bigseal{animation:stamp .45s calc(var(--dur,3s) + .1s) cubic-bezier(.2,.9,.3,1) both}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+
+<div id="app">
+  <canvas id="sky" aria-hidden="true"></canvas>
+  <section class="screen" id="s-intro"></section>
+  <section class="screen" id="s-q" hidden></section>
+  <section class="screen" id="s-print" hidden></section>
+  <section class="screen" id="s-goals" hidden></section>
+  <nav id="tabs" aria-label="Menü"></nav>
+  <div id="sheet" hidden></div>
+  <div class="toast" id="toast" role="status"></div>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const up = s => String(s).toLocaleUpperCase((typeof st !== "undefined" && st.lang === "en") ? "en" : "tr");
+
+/* ---------- native (Capacitor) ---------- */
+const CAP = window.Capacitor;
+const NATIVE = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
+const PL = (CAP && CAP.Plugins) || {};
+(function safeAreaFallback(){
+  try{
+    const p = document.createElement("div"); p.style.cssText = "position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);visibility:hidden";
+    document.body.appendChild(p); const envTop = p.getBoundingClientRect().height; p.remove();
+    if (envTop > 0 || !(NATIVE && /iPhone|iPad|iPod|Mac/.test(navigator.userAgent))) return;
+    const w = Math.min(screen.width, screen.height), h = Math.max(screen.width, screen.height);
+    const TOP = {"375x812":50,"414x896":48,"390x844":47,"428x926":47,"393x852":59,"430x932":59,"402x874":62,"440x956":62,"420x912":62};
+    document.documentElement.style.setProperty("--safe-top", (TOP[w + "x" + h] || (h >= 812 ? 50 : 20)) + "px");
+    document.documentElement.style.setProperty("--safe-bottom", (h >= 812 ? 34 : 0) + "px");
+  }catch(e){}
+})();
+async function nativeShare(cv, text, name){
+  const data = cv.toDataURL("image/png").split(",")[1];
+  const r = await PL.Filesystem.writeFile({path:name, data, directory:"CACHE"});
+  await PL.Share.share({text, files:[r.uri]});
+}
+/* Hatırlatmalar: telefonun içinde kurulur, sunucu yok. Metinler kişisel içerik taşımaz (kilit ekranı). */
+const LN = NATIVE && PL.LocalNotifications;
+const NOTE = {
+  tr:{mT:"Ayın fişi hazır", mB:m => `${m} bitiyor. Hesabını kapat, yeni ayın kuponunu al.`, yT:"Yılın fişi hazır", yB:y => `${y} bitiyor. Yılın hesabını kapat, ${y+1} kuponunu al.`, gT:"Hedefine 3 gün kaldı", gB:"Bir hedefinin son gününe 3 gün kaldı. Hâlâ yetişebilirsin."},
+  en:{mT:"Your monthly receipt is ready", mB:m => `${m} is ending. Close it out and claim next month’s coupon.`, yT:"Your yearly receipt is ready", yB:y => `${y} is ending. Close out the year and claim your ${y+1} coupon.`, gT:"3 days left on a goal", gB:"One of your goals is due in 3 days. You can still make it."}
+};
+async function notifPermission(ask){
+  if (!LN) return false;
+  try{ const c = await LN.checkPermissions(); if (c.display === "granted") return true; if (!ask) return false;
+    const r = await LN.requestPermissions(); return r.display === "granted"; }catch(e){ return false; }
+}
+async function scheduleReminders(ask){
+  if (!LN || !(await notifPermission(ask))) return;
+  try{
+    const pend = await LN.getPending(); if (pend.notifications.length) await LN.cancel({notifications:pend.notifications.map(n => ({id:n.id}))});
+    const N = NOTE[st.lang] || NOTE.tr, now = new Date(), list = [];
+    let d = new Date(now.getFullYear(), now.getMonth() + 1, 0, 20, 0); if (d <= now) d = new Date(now.getFullYear(), now.getMonth() + 2, 0, 20, 0);
+    const mName = (st.lang === "tr" ? AYLAR : MONTHS)[d.getMonth()];
+    list.push(d.getMonth() === 11 ? {id:1001, title:N.yT, body:N.yB(d.getFullYear()), schedule:{at:d, allowWhileIdle:true}} : {id:1001, title:N.mT, body:N.mB(mName), schedule:{at:d, allowWhileIdle:true}});
+    let k = 0;
+    for (const g of goals){ if (g.doneAt) continue; const at = new Date(g.deadline - 3*864e5); at.setHours(10, 0, 0, 0);
+      if (at > now && k < 40) list.push({id:2000 + (k++), title:N.gT, body:N.gB, schedule:{at, allowWhileIdle:true}}); }
+    if (list.length) await LN.schedule({notifications:list});
+  }catch(e){}
+}
+const FW = "(?:^|[^a-z0-9])", FE = "(?:[^a-z0-9]|$)";
+const rx = (arr, pre="", post="") => arr.map(p => new RegExp(pre + p + post));
+const FILTER = {
+  crisis: rx(["intihar","kendimi ?(oldur|as(ac|ma|ti)|yak)","canima kiy","olmek ist","olsem","yasamak istemi","hayatima son","bilek(ler)?(imi)? ?kes","kendime zarar","suicid","kill (my|him|her)self","end(ing)? my life","want to die"]),
+  harm: rx(["oldur","katlet","iskence","murder","kill","bicakla"], FW).concat(rx(["cinayet","olum(u|e|den|le|un|une|uyle)?","katil(ler)?","death"], FW, FE)),
+  abuse: rx(["taciz","tecavuz","istismar","molest","harass"]).concat(rx(["irz(a|ina|imi|ini)","rap(e|ed|es|ing|ist)"], FW, FE)),
+  sexual: rx(["seks(?!en)","sex","cinsel","porn","erotik","erotic","masturb","orgazm","orgasm","fahise","genelev","escort","eskort","onlyfans","nude","ciplak","sakso","fetis","fetish","horny","penis(?!il)","vajina","vagina","sevis","tek gecelik","one night stand"], FW)
+          .concat(rx(["boob(s)?","tits","anal","sikis(mek)?"], FW, FE)),
+  swear: rx(["orospu","siktir","sikerim","sikeyim","siktim","sikik","sikis","amina","amcik","yarrak","pezevenk","kahpe","ibne","gotveren","serefsiz","fuck","motherfuck","bitch","asshole","bastard"], FW)
+          .concat(rx(["amk","aq","oc","pic","got","yarak","gavat","shit","cunt","dick"], FW, FE))
+};
+function normText(s){
+  let t = String(s || "").toLocaleLowerCase("tr");
+  t = t.replace(/[çğıöşüâîû]/g, c => ({ç:"c",ğ:"g",ı:"i",ö:"o",ş:"s",ü:"u",â:"a",î:"i",û:"u"}[c]));
+  t = t.replace(/[0134@$57]/g, c => ({"0":"o","1":"i","3":"e","4":"a","@":"a","$":"s","5":"s","7":"t"}[c]));
+  t = t.replace(/([a-z])[.\-_*]+(?=[a-z])/g, "$1");
+  return t.replace(/\s+/g, " ").trim();
+}
+// Türkçe karakterleri koruyan ikinci kontrol: noktalı "sik" küfürdür, noktasız "sık" (sık sık) değildir.
+const UW = "(?:^|[^a-zçğıöşü0-9])";
+const FILTER_TR = [new RegExp(UW + "s[i!|]k(?!ke|lon|let)"), new RegExp(UW + "am(ı|i)n(a|ı|i)" )];
+function normTr(s){
+  let t = String(s || "").toLocaleLowerCase("tr");
+  t = t.replace(/[0134@$57]/g, c => ({"0":"o","1":"i","3":"e","4":"a","@":"a","$":"s","5":"s","7":"t"}[c]));
+  return t.replace(/([a-zçğıöşü])[.\-_*\s]+(?=[a-zçğıöşü](?:[.\-_*\s]|$))/g, "$1");
+}
+function screenText(s){
+  const t = normText(s); if (!t) return null;
+  const u = normTr(s);
+  if (FILTER_TR.some(r => r.test(u))) return "swear";
+  for (const k of ["crisis","abuse","harm","sexual","swear"]) if (FILTER[k].some(r => r.test(t))) return k;
+  return null;
+}
+
+const screenAll = (...xs) => xs.map(screenText).find(Boolean) || null;
+
+
+/* ---------- dil ---------- */
+const NOW = new Date();
+const STORE_LANG = (() => { try{ return localStorage.getItem("kismet.lang"); }catch(e){ return null; } })();
+
+/* ---------- dönem: telefonun tarihinden ----------
+   Yıllık: Ocak ayında hâlâ geçen yıl kapanır, Şubat'tan itibaren içinde bulunulan yıl.
+   Aylık: ayın ilk 5 günü hâlâ geçen ay kapanır, sonrasında içinde bulunulan ay. */
+const AYLAR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+function yilKelime(y){
+  const BIR = ["","bir","iki","üç","dört","beş","altı","yedi","sekiz","dokuz"], ON = ["","on","yirmi","otuz","kırk","elli","altmış","yetmiş","seksen","doksan"];
+  return y % 10 ? BIR[y % 10] : y % 100 ? ON[(y % 100) / 10] : y % 1000 ? "yüz" : "bin";
+}
+/* Türkçe ek: okunuştaki son kelimeye göre ünlü uyumu ve sert ünsüz benzeşmesi */
+function ekW(goster, w, hal){
+  const v = [...w].reverse().find(ch => "aeıioöuü".includes(ch)), endsV = "aeıioöuü".includes(w.slice(-1)), hard = "fsthşçkp".includes(w.slice(-1));
+  const i4 = {a:"ı",ı:"ı",e:"i",i:"i",o:"u",u:"u",ö:"ü",ü:"ü"}[v], a2 = "aıou".includes(v) ? "a" : "e";
+  const s = {ilgi:(endsV?"n":"")+i4+"n", bulunma:(hard?"t":"d")+a2, belirtme:(endsV?"y":"")+i4, yonelme:(endsV?"y":"")+a2}[hal];
+  return goster + "'" + s;
+}
+const ek = (y, hal) => ekW(String(y), yilKelime(y), hal);
+const ekAy = (m, hal) => ekW(AYLAR[m], AYLAR[m].toLocaleLowerCase("tr"), hal);
+const pad2 = n => String(n).padStart(2, "0");
+function rawPeriod(mode){
+  if (mode === "year"){
+    const y = NOW.getMonth() === 0 ? NOW.getFullYear() - 1 : NOW.getFullYear();
+    return {mode, y, ny:y + 1, days:((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0) ? 366 : 365, expD:31, expM:11, expY:y + 1};
+  }
+  let y = NOW.getFullYear(), m = NOW.getMonth();
+  if (NOW.getDate() <= 5){ m--; if (m < 0){ m = 11; y--; } }
+  let ny = y, nm = m + 1; if (nm > 11){ nm = 0; ny++; }
+  return {mode, y, m, ny, nm, days:new Date(y, m + 1, 0).getDate(), expD:new Date(ny, nm + 1, 0).getDate(), expM:nm, expY:ny};
+}
+
+/* ---------- metinler ---------- */
+const OPT = {
+  spend:[["⏳","Zaman","Time"],["💸","Para","Money"],["🧘","Sabır","Patience"],["🌙","Uykusuzluk","Sleepless nights"],["💞","Sevgi","Love"],["🔥","Cesaret","Courage"]],
+  later:[["🙂","Hiç","Never"],["✋","1–5 kez","1–5 times"],["🔁","10'dan fazla","More than 10"],["🫠","Saymayı bıraktım","Lost count"]],
+  unsaid:[["🤐","Yok, hepsini söyledim","No, I said it all"],["✉️","Bir tane var","There's one thing"],["📜","Bir liste var","There's a list"]],
+  week:[["1️⃣","İlk hafta","First week"],["2️⃣","İkinci hafta","Second week"],["3️⃣","Üçüncü hafta","Third week"],["4️⃣","Son hafta","Last week"]],
+  surprised:[["🪞","Kendimi","Myself"],["🏠","Ailemi","My family"],["💼","Patronumu","My boss"],["👋","Eski sevgilimi","My ex"],["🫂","Arkadaşlarımı","My friends"],["😶","Kimseyi","Nobody"]],
+  word:[["📝","Sınav","Test"],["🦋","Dönüşüm","Transformation"],["⏸️","Bekleme","Waiting"],["🌪️","Kaos","Chaos"],["🚀","Yükseliş","Rise"],["🩹","Toparlanma","Recovery"]],
+  want:[["🔥","Cesaret","Courage"],["🌿","Huzur","Peace"],["💌","Aşk","Love"],["💰","Para","Money"],["🧭","Macera","Adventure"],["🫶","Kendime","Myself"]]
+};
+OPT.month = AYLAR.map((m, i) => ["", m, MONTHS[i]]);
+const SIGNS = [["♈","Koç","Aries"],["♉","Boğa","Taurus"],["♊","İkizler","Gemini"],["♋","Yengeç","Cancer"],["♌","Aslan","Leo"],["♍","Başak","Virgo"],["♎","Terazi","Libra"],["♏","Akrep","Scorpio"],["♐","Yay","Sagittarius"],["♑","Oğlak","Capricorn"],["♒","Kova","Aquarius"],["♓","Balık","Pisces"]];
+
+const L = {
+  tr: {
+    loc:"tr", seg:["Aylık fiş","Yıllık fiş"],
+    period(r){
+      if (r.mode === "year") return {cur:String(r.y), next:String(r.ny), ek:h => ek(r.y,h), ekN:h => ek(r.ny,h), bu:"Bu yıl", unit:"yılını",
+        head:`${r.y} HESAP FİŞİ`, couponPeriod:String(r.ny), story:`${r.y} → ${r.ny}`, share:`${r.y} fişim kesildi. Seninki ne diyor?`, wordLabel:"YILIN KELİMESİ"};
+      return {cur:AYLAR[r.m], next:AYLAR[r.nm], ek:h => ekAy(r.m,h), ekN:h => ekAy(r.nm,h), bu:"Bu ay", unit:"ayını",
+        head:up(`${AYLAR[r.m]} ${r.y} HESAP FİŞİ`), couponPeriod:up(`${AYLAR[r.nm]} ${r.ny}`), story:`${AYLAR[r.m]} → ${AYLAR[r.nm]}`, share:`${AYLAR[r.m]} fişim kesildi. Seninki ne diyor?`, wordLabel:"AYIN KELİMESİ"};
+    },
+    expiry:r => `${pad2(r.expD)}.${pad2(r.expM + 1)}.${r.expY}`,
+    title:P => `${P.ek("ilgi")} hesabını kapat, <em>${P.ekN("ilgi")} kuponunu</em> al.`,
+    lead:P => `Yedi kısa soru. Makine ${P.unit} bir fiş olarak basar, sonra ${P.next} için bir kısmet kuponu keser.`,
+    meta:["7 soru","1 dakika","hikâyende paylaş"],
+    nameLabel:"Fişe hangi isim yazılsın?", namePh:"Adın ya da takma adın",
+    signLabel:'Burcun <span style="color:var(--muted);font-weight:500">(isteğe bağlı)</span>',
+    go:"Makineyi çalıştır", fine:"Kısmet Fişi · a Massalverse machine · <a href=\"gizlilik.html#tr\" style=\"color:inherit\">Gizlilik ve KVKK</a><br>Bu bir oyundur; fiş gelecek tahmini değildir. Hiçbir veri toplanmaz.",
+    q:P => ({
+      spend:`${P.ek("bulunma")} en çok neye harcadın?`, later:`${P.bu} kaç kez “yarın başlarım” dedin?`, unsaid:"Birine söyleyemediğin bir şey kaldı mı?",
+      month:`${P.ek("ilgi")} en güzel anı hangi aydaydı?`, week:`${P.ek("ilgi")} en güzel günü hangi haftadaydı?`,
+      surprised:`${P.bu} en çok kimi şaşırttın?`, word:`${P.ek("belirtme")} tek kelimeyle anlat.`, want:`${P.ekN("bulunma")} neye daha çok yer açmak istiyorsun?`,
+      drop:`${P.ek("bulunma")} geride bırakmak istediğin tek şey ne?`}),
+    label:{spend:"EN BÜYÜK HARCAMA", later:"ERTELENEN BAŞLANGIÇ", unsaid:"SÖYLENMEMİŞ SÖZ", month:"EN İYİ AY", week:"EN İYİ HAFTA", surprised:"EN ÇOK ŞAŞIRTILAN"},
+    qnum:(i,n) => `SORU ${i} / ${n}`, optional:"İSTEĞE BAĞLI", dropPh:"örn. gece kaydırmak", print:"Fişimi bas", skip:"Atla ve bas", back:"Geri",
+    blocked:"Bu ifade kullanılamıyor. Başka kelimelerle yaz.", crisis:"Zor bir dönemden geçiyorsan lütfen yalnız kalma: güvendiğin biriyle konuş ya da 112’yi ara.",
+    machine:"KISMET MAKİNESİ", receiptTitle:"KISMET FİŞİ", customer:"MÜŞTERİ", guest:"MİSAFİR", sign:"BURÇ", returned:"İADE EDİLEN", subtotal:"ARA TOPLAM", days:n => `${n} GÜN`,
+    vat:"KDV (Kader Değer V.)", vatVal:"DAHİL", balanceL:"BAKİYE", game:"bu bir oyundur · gelecek tahmini değildir",
+    balance:P => ["Sınav bitti. Sonuç: geçtin.","Yeni sürüm yüklendi.","Sıra artık sende.","Kaos iade alındı, düzen yolda.",`Yükseliş ${P.ekN("yonelme")} devrediyor.`,"+1 ikinci şans tanımlandı."],
+    couponWord:"KISMET KUPONU", validFor:"Bu kupon 1 (bir) adet", validEnd:"için geçerlidir.",
+    use:["Bir kez “evet” demek için kullan.","Telefonu kapattığın bir akşam için kullan.","Bir ilk mesaj için kullan.","Bir cesur pazarlık için kullan.","Hiç gitmediğin bir yer için kullan.","Sadece senin olan bir gün için kullan."],
+    expires:"Son kullanma", seal:["KISMET","ONAYLI"], shareBtn:"Hikâyende paylaş", again:"Baştan oyna",
+    sheetAlt:"Paylaşılacak Kısmet Fişi görseli", sheetText:"Görsel Instagram hikâyesi boyutunda (1080 × 1920). Paylaş'a bas ya da görsele uzun basıp kaydet.",
+    doShare:"Paylaş", close:"Kapat", noShare:"Bu cihazda doğrudan paylaşılamıyor. Görsele uzun basıp kaydet.",
+    storyAsk:"Senin fişin ne diyor?", storyFoot:"Kısmet Fişi · a Massalverse machine · bu bir oyundur", file:"kismet-fisi.png",
+    tabs:["Fiş","Hedeflerim"],
+    gTitle:"Hedeflerim", gSub:(n,d) => n ? `${n} hedef · ${d} gerçekleşti` : "Bir hedef koy, gerçekleştirince makine sana başarı fişi bassın.",
+    gQuick:"Hazır hedefler", gWrite:"Kendi hedefini yaz", fIcon:"Simgesi", gCustom:"Kendi hedefim", gActive:"Devam edenler", gDone:"Gerçekleşenler",
+    gEmpty:"Henüz hedef yok. Hazır hedeflerden birine dokun ya da en üstten kendi hedefini yaz.",
+    tpl:[["⚖️","Kilo vermek",5,"kg",.5],["📚","Kitap bitirmek",12,"kitap",1],["📵","Hiçbir exe yazmamak",30,"gün",1],["🏃","Spor yapmak",20,"gün",1],["💰","Para biriktirmek",10000,"TL",500],["🗣️","Dil öğrenmek",30,"gün",1],["🚭","Sigarayı bırakmak",30,"gün",1],["⏰","Erken kalkmak",21,"gün",1],["✈️","Yeni bir yer görmek",1,"yer",1]],
+    fNew:"Yeni hedef", fName:"Hedefin ne?", fNamePh:"örn. 12 kitap bitirmek", fTarget:"Ne kadar? (isteğe bağlı)", fTargetPh:"12", fUnitPh:"birim: kg, kitap, gün…",
+    fWhen:"Ne zamana kadar?", fWhenOpts:["Bu ay sonu","Bu yıl sonu"], fAdd:"Hedefi ekle", fCancel:"Vazgeç",
+    gLast:"Son gün", gDid:"Gerçekleştirdim", gView:"Başarı fişini gör", gDel:"Sil", gDelSure:"Emin misin?", gLeft:n => n > 0 ? `${n} gün kaldı` : n === 0 ? "Bugün son gün" : "Süre doldu, yine de bitirebilirsin",
+    aTitle:"BAŞARI FİŞİ", aGoal:"HEDEF", aStart:"BAŞLANGIÇ", aEnd:"GERÇEKLEŞME", aDur:"SÜRE", aProg:"İLERLEME", aWill:"İRADE", aWillV:"TAM ÖDENDİ", aDelay:"ERTELEME", aDelayV:"İADE EDİLDİ",
+    aSeal:"✦ GERÇEKLEŞTİ ✦", aMsg:"Geçmişteki sen bunu bekliyordu.", aShare:g => `Bir hedefimi gerçekleştirdim: ${g}. Senin hedefin ne?`, aAgain:"Hedeflerime dön", aStoryTop:"HEDEF GERÇEKLEŞTİ", aStoryAsk:"Senin hedefin ne?",
+    added:"Hedef eklendi.", fmtDate:d => `${pad2(d.getDate())}.${pad2(d.getMonth()+1)}.${d.getFullYear()}`
+  },
+  en: {
+    loc:"en", seg:["Monthly","Yearly"],
+    period(r){
+      if (r.mode === "year") return {cur:String(r.y), next:String(r.ny), bu:"this year", head:`${r.y} STATEMENT`, couponPeriod:String(r.ny),
+        story:`${r.y} → ${r.ny}`, share:`My ${r.y} receipt is in. What does yours say?`, wordLabel:"WORD OF THE YEAR"};
+      return {cur:MONTHS[r.m], next:MONTHS[r.nm], bu:"this month", head:`${MONTHS[r.m]} ${r.y} STATEMENT`.toUpperCase(), couponPeriod:`${MONTHS[r.nm]} ${r.ny}`.toUpperCase(),
+        story:`${MONTHS[r.m].slice(0,3)} → ${MONTHS[r.nm].slice(0,3)}`, share:`My ${MONTHS[r.m]} receipt is in. What does yours say?`, wordLabel:"WORD OF THE MONTH"};
+    },
+    expiry:r => `${MONTHS[r.expM].slice(0,3)} ${r.expD}, ${r.expY}`,
+    title:P => `Close out ${P.cur}. <em>Claim your ${P.next} coupon.</em>`,
+    lead:P => `Seven quick questions. The machine prints your ${P.bu === "this year" ? "year" : "month"} as a receipt, then cuts a kismet coupon for ${P.next}.`,
+    meta:["7 questions","1 minute","story-ready"],
+    nameLabel:"What name goes on the receipt?", namePh:"Your name or nickname",
+    signLabel:'Your sign <span style="color:var(--muted);font-weight:500">(optional)</span>',
+    go:"Run the machine", fine:"Kismet Receipt · a Massalverse machine · <a href=\"gizlilik.html#en\" style=\"color:inherit\">Privacy</a><br>This is a game; the receipt is not a prediction. No data is collected.",
+    q:P => ({
+      spend:`What did you spend the most on in ${P.cur}?`, later:`How many times did you say “I’ll start tomorrow” ${P.bu}?`, unsaid:"Is there something you never got to say to someone?",
+      month:`When was the best moment of ${P.cur}?`, week:`Which week of ${P.cur} had your best day?`,
+      surprised:`Who did you surprise the most ${P.bu}?`, word:`Sum up ${P.cur} in one word.`, want:`What do you want to make more room for in ${P.next}?`,
+      drop:`What’s one thing you want to leave behind in ${P.cur}?`}),
+    label:{spend:"BIGGEST EXPENSE", later:"POSTPONED STARTS", unsaid:"UNSAID WORDS", month:"BEST MONTH", week:"BEST WEEK", surprised:"MOST SURPRISED"},
+    qnum:(i,n) => `QUESTION ${i} / ${n}`, optional:"OPTIONAL", dropPh:"e.g. doomscrolling at night", print:"Print my receipt", skip:"Skip and print", back:"Back",
+    blocked:"That can’t be used here. Try different words.", crisis:"If you’re going through something hard, please don’t stay alone with it: talk to someone you trust or call your local emergency number.",
+    machine:"KISMET MACHINE", receiptTitle:"KISMET RECEIPT", customer:"CUSTOMER", guest:"GUEST", sign:"SIGN", returned:"RETURNED", subtotal:"SUBTOTAL", days:n => `${n} DAYS`,
+    vat:"VAT (Value-Added Fate)", vatVal:"INCL.", balanceL:"BALANCE", game:"this is a game · not a prediction",
+    balance:P => ["Test over. Result: passed.","New version installed.","Your turn now.","Chaos returned, order on the way.",`Rise carries over to ${P.next}.`,"+1 second chance issued."],
+    couponWord:"KISMET COUPON", validFor:"This coupon is good for one (1)", validEnd:"Not valid for regrets.",
+    use:["Use it to say “yes” once.","Use it on an evening with your phone off.","Use it for a first message.","Use it for one bold negotiation.","Use it on a place you’ve never been.","Use it on a day that’s only yours."],
+    expires:"Expires", seal:["KISMET","APPROVED"], shareBtn:"Share to your story", again:"Play again",
+    sheetAlt:"Kismet Receipt image to share", sheetText:"Story-sized image (1080 × 1920). Tap Share, or press and hold the image to save it.",
+    doShare:"Share", close:"Close", noShare:"Sharing isn’t available here. Press and hold the image to save it.",
+    storyAsk:"What does your receipt say?", storyFoot:"Kismet Receipt · a Massalverse machine · this is a game", file:"kismet-receipt.png",
+    tabs:["Receipt","My goals"],
+    gTitle:"My goals", gSub:(n,d) => n ? `${n} goals · ${d} achieved` : "Set a goal. When you reach it, the machine prints you an achievement receipt.",
+    gQuick:"Ready-made goals", gWrite:"Write your own goal", fIcon:"Icon", gCustom:"My own goal", gActive:"In progress", gDone:"Achieved",
+    gEmpty:"No goals yet. Tap a ready-made goal or write your own at the top.",
+    tpl:[["⚖️","Lose weight",5,"kg",.5],["📚","Finish books",12,"books",1],["📵","Don’t text my ex",30,"days",1],["🏃","Work out",20,"days",1],["💰","Save money",1000,"USD",50],["🗣️","Learn a language",30,"days",1],["🚭","Quit smoking",30,"days",1],["⏰","Wake up early",21,"days",1],["✈️","See a new place",1,"place",1]],
+    fNew:"New goal", fName:"What's your goal?", fNamePh:"e.g. finish 12 books", fTarget:"How much? (optional)", fTargetPh:"12", fUnitPh:"unit: kg, books, days…",
+    fWhen:"By when?", fWhenOpts:["End of this month","End of this year"], fAdd:"Add goal", fCancel:"Cancel",
+    gLast:"Due", gDid:"I did it", gView:"See achievement receipt", gDel:"Delete", gDelSure:"Sure?", gLeft:n => n > 0 ? `${n} days left` : n === 0 ? "Due today" : "Past due, you can still finish",
+    aTitle:"ACHIEVEMENT RECEIPT", aGoal:"GOAL", aStart:"STARTED", aEnd:"ACHIEVED", aDur:"TIME TAKEN", aProg:"PROGRESS", aWill:"WILLPOWER", aWillV:"PAID IN FULL", aDelay:"PROCRASTINATION", aDelayV:"REFUNDED",
+    aSeal:"✦ ACHIEVED ✦", aMsg:"Your past self was waiting for this.", aShare:g => `I just achieved a goal: ${g}. What's yours?`, aAgain:"Back to my goals", aStoryTop:"GOAL ACHIEVED", aStoryAsk:"What's your goal?",
+    added:"Goal added.", fmtDate:d => `${MONTHS[d.getMonth()].slice(0,3)} ${d.getDate()}, ${d.getFullYear()}`
+  }
+};
+
+let st = {name:"", sign:null, a:{}, drop:"", i:0, no:0,
+  mode:(NOW.getMonth() === 11 || NOW.getMonth() === 0) ? "year" : "month",
+  lang:STORE_LANG || (/^tr/i.test(navigator.language || "") ? "tr" : "en")};
+let T, R, P, Q;
+function build(){
+  T = L[st.lang]; R = rawPeriod(st.mode); P = T.period(R);
+  const qs = T.q(P), keys = ["spend","later","unsaid", st.mode === "year" ? "month" : "week","surprised","word","want"];
+  Q = keys.map(k => ({k, q:qs[k], label:k === "word" ? P.wordLabel : k === "want" ? "" : T.label[k], cols3:k === "month", o:OPT[k]}));
+  document.documentElement.lang = T.loc;
+  document.title = st.lang === "tr" ? "Kısmet Fişi" : "Kismet Receipt";
+}
+const optLabel = (k, idx) => OPT[k][idx] ? OPT[k][idx][st.lang === "tr" ? 1 : 2] : "—";
+const errText = bad => bad === "crisis" ? T.crisis : T.blocked;
+
+/* ---------- sky: yıldızlar + uzamsal bulutlar ----------
+   Bulutlar uzakta (z büyük) küçük ve soluk doğar, yavaşça izleyiciye yaklaşır, yanından geçerken erir.
+   Parmak/fare hareketi yakın bulutları uzaktakilerden daha çok kaydırır (paralaks). */
+const sky = $("#sky"), sctx = sky.getContext("2d"); let stars = [], SW = 390, SH = 844;
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function cloudSprite(seed){
+  const cv = document.createElement("canvas"); cv.width = 360; cv.height = 180; const c = cv.getContext("2d");
+  let r = seed * 9301 + 49297; const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280;
+  const puffs = 9 + Math.floor(rnd() * 6);
+  for (let i = 0; i < puffs; i++){
+    const px = 60 + rnd() * 240, py = 70 + (rnd() - .5) * 50 - Math.sin((px - 60) / 240 * Math.PI) * 28, pr = 34 + rnd() * 46;
+    const g = c.createRadialGradient(px, py, 0, px, py, pr);
+    g.addColorStop(0, "rgba(216,244,240,.58)"); g.addColorStop(.55, "rgba(150,206,214,.30)"); g.addColorStop(1, "rgba(110,170,200,0)");
+    c.fillStyle = g; c.beginPath(); c.arc(px, py, pr, 0, 6.283); c.fill();
+  }
+  // ay ışığı alt gölgesi
+  const sh = c.createLinearGradient(0, 40, 0, 180); sh.addColorStop(0, "rgba(10,15,31,0)"); sh.addColorStop(1, "rgba(10,15,31,.35)");
+  c.globalCompositeOperation = "source-atop"; c.fillStyle = sh; c.fillRect(0, 0, 360, 180);
+  return cv;
+}
+const SPRITES = Array.from({length: 6}, (_, i) => cloudSprite(i + 3));
+const newCloud = far => ({x:(Math.random() * 2 - 1) * 1.6, y:-.15 + Math.random() * 1.15, z:far ? 3.2 + Math.random() * .8 : .6 + Math.random() * 3.2,
+  s:SPRITES[Math.floor(Math.random() * SPRITES.length)], w:.9 + Math.random() * .7, dx:(Math.random() - .5) * .02});
+let clouds = Array.from({length: 13}, () => newCloud(false));
+let par = {x:0, y:0, tx:0, ty:0}, lastT = 0;
+function sizeSky(){ const r = sky.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); SW = r.width; SH = r.height; sky.width = SW*d; sky.height = SH*d; sctx.setTransform(d,0,0,d,0,0);
+  stars = Array.from({length: 90}, (_, i) => ({x:Math.random()*SW, y:Math.random()*SH, r:Math.random()*1.3+.2, p:Math.random()*6.28, gold:i % 9 === 0})); }
+function drawClouds(c, W, H, list, px, py, k){
+  const cx = W / 2, hy = H * .42;
+  list.sort((a, b) => b.z - a.z);
+  for (const cl of list){
+    const sc = 1 / cl.z, x = cx + (cl.x / cl.z) * W * .55 + px * 26 * sc, y = hy + (cl.y / cl.z) * H * .55 + py * 18 * sc;
+    const w = 360 * cl.w * sc * (W / 390) * k, h = w / 2;
+    const fadeFar = Math.min(1, (4 - cl.z) / 1.1), fadeNear = Math.min(1, (cl.z - .32) / .5);
+    const a = Math.max(0, Math.min(fadeFar, fadeNear)) * (.16 + .2 * Math.min(1, sc));
+    if (a <= .005) continue;
+    c.globalAlpha = a; c.drawImage(cl.s, x - w / 2, y - h / 2, w, h);
+  }
+  c.globalAlpha = 1;
+}
+function drawSky(t){
+  const dt = lastT ? Math.min(.05, (t - lastT) / 1000) : 0; lastT = t;
+  sctx.clearRect(0,0,SW,SH);
+  for (const s of stars){ const a = .35 + .4*Math.sin(t/900 + s.p); sctx.globalAlpha = Math.max(.1,a); sctx.fillStyle = s.gold ? "#F2D479" : "#E2F6F2"; sctx.beginPath(); sctx.arc(s.x,s.y,s.gold ? s.r + .6 : s.r,0,6.28); sctx.fill(); }
+  // ay hâlesi
+  const mg = sctx.createRadialGradient(SW*.82, SH*.1, 0, SW*.82, SH*.1, SW*.55); mg.addColorStop(0,"rgba(242,212,121,.14)"); mg.addColorStop(1,"rgba(200,214,255,0)");
+  sctx.globalAlpha = 1; sctx.fillStyle = mg; sctx.fillRect(0,0,SW,SH);
+  par.x += (par.tx - par.x) * .04; par.y += (par.ty - par.y) * .04;
+  for (const cl of clouds){ cl.z -= dt * .045; cl.x += cl.dx * dt; if (cl.z < .3) Object.assign(cl, newCloud(true)); }
+  drawClouds(sctx, SW, SH, clouds, par.x, par.y, 1);
+  if (!RM) requestAnimationFrame(drawSky);
+}
+$("#app").addEventListener("pointermove", e => { const r = $("#app").getBoundingClientRect(); par.tx = ((e.clientX - r.left) / r.width - .5) * 2; par.ty = ((e.clientY - r.top) / r.height - .5) * 2; }, {passive:true});
+addEventListener("resize", sizeSky); sizeSky(); requestAnimationFrame(drawSky);
+/* paylaşım görselleri için sabit bir bulut sahnesi */
+function storyClouds(c, W, H){ const list = Array.from({length: 11}, () => newCloud(false)); drawClouds(c, W, H, list, 0, 0, 1); }
+
+/* ---------- sound ---------- */
+let ac = null;
+function audio(){ try{ ac = ac || new (window.AudioContext||window.webkitAudioContext)(); if (ac.state === "suspended") ac.resume(); return ac; }catch(e){ return null; } }
+function tone(f, d, v=.05, type="sine", slide){ const a = audio(); if (!a) return; const t = a.currentTime, o = a.createOscillator(), g = a.createGain(); o.type = type; o.frequency.setValueAtTime(f,t); if (slide) o.frequency.exponentialRampToValueAtTime(slide,t+d); g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(.0001,t+d); o.connect(g).connect(a.destination); o.start(t); o.stop(t+d+.02); }
+function printSound(ms){ const a = audio(); if (!a) return; const len = a.sampleRate*.05, buf = a.createBuffer(1,len,a.sampleRate), d = buf.getChannelData(0); for (let i=0;i<len;i++) d[i] = Math.random()*2-1;
+  for (let i=0;i<ms/75;i++){ const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime + i*.075; s.buffer = buf; f.type="bandpass"; f.frequency.value = 3000 + (i%3)*400; g.gain.setValueAtTime(.04,t); g.gain.exponentialRampToValueAtTime(.0001,t+.045); s.connect(f).connect(g).connect(a.destination); s.start(t); } }
+const tap = () => { tone(1400,.03,.03); try{ navigator.vibrate && navigator.vibrate(6); }catch(e){} };
+let toastT; function toast(m){ const t = $("#toast"); t.textContent = m; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2600); }
+
+function show(id){
+  for (const s of ["s-intro","s-q","s-print","s-goals"]) $("#"+s).hidden = s !== id;
+  $("#"+id).scrollTop = 0;
+  const tabbed = id === "s-intro" || id === "s-goals";
+  $("#tabs").hidden = !tabbed;
+  $("#s-intro").classList.toggle("withtabs", true); $("#s-goals").classList.toggle("withtabs", true);
+  if (tabbed) renderTabs(id === "s-goals" ? "goals" : "fis");
+}
+function renderTabs(cur){
+  $("#tabs").innerHTML = `<button data-tab="fis" aria-current="${cur==="fis"?"page":"false"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21z"/><path d="M9 8h6M9 12h6"/></svg>${T.tabs[0]}</button>
+    <button data-tab="goals" aria-current="${cur==="goals"?"page":"false"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".6" fill="currentColor"/></svg>${T.tabs[1]}</button>`;
+}
+
+/* ---------- intro ---------- */
+function renderIntro(){
+  build();
+  $("#s-intro").innerHTML = `
+    <div class="toprow">
+      <div class="seg" role="radiogroup" aria-label="${st.lang === "tr" ? "Fiş türü" : "Receipt type"}">${[["month",T.seg[0]],["year",T.seg[1]]].map(([m,l]) => `<button role="radio" data-mode="${m}" aria-checked="${st.mode===m}">${l}</button>`).join("")}</div>
+      <div class="lang" role="radiogroup" aria-label="Dil / Language">${["tr","en"].map(l => `<button role="radio" data-lang="${l}" aria-checked="${st.lang===l}">${l.toUpperCase()}</button>`).join("")}</div>
+    </div>
+    <h1>${T.title(P)}</h1>
+    <p class="lead">${T.lead(P)}</p>
+    <div class="meta">${T.meta.map(m => `<span>${m}</span>`).join("")}</div>
+    <div class="preview" aria-hidden="true"><div class="mini"><b>${P.head}</b>
+      <div class="r"><span>${T.label.spend}</span><span>${up(optLabel("spend",2))}</span></div>
+      <div class="r"><span>${P.wordLabel}</span><span>${up(optLabel("word",1))}</span></div>
+      <div class="r"><span>${T.vat}</span><span>${T.vatVal}</span></div></div></div>
+    <div class="field"><label for="nm">${T.nameLabel}</label>
+      <input id="nm" maxlength="14" autocomplete="given-name" placeholder="${T.namePh}" value="${esc(st.name)}">
+      <p class="err" id="nm-err" hidden></p></div>
+    <button class="btn btn-primary" id="go" style="margin-top:16px">${T.go}</button>
+    <div class="field"><label>${T.signLabel}</label>
+      <div class="signs" role="group">${SIGNS.map((s,i) => `<button class="sign" data-sign="${i}" aria-pressed="${st.sign===i}"><b>${s[0]}︎</b>${s[st.lang === "tr" ? 1 : 2]}</button>`).join("")}</div></div>
+    <p class="fine">${T.fine}</p>`;
+  $("#nm").addEventListener("input", e => { const bad = screenText(e.target.value); $("#nm-err").hidden = !bad; if (bad) $("#nm-err").textContent = errText(bad); $("#go").disabled = !!bad; st.name = e.target.value.trim(); });
+  $("#s-intro").classList.remove("fade"); void $("#s-intro").offsetWidth; $("#s-intro").classList.add("fade");
+}
+
+/* ---------- questions ---------- */
+const TOTAL = 8;
+function renderQ(){
+  const i = st.i, dots = Array.from({length:TOTAL}, (_,k) => `<i class="${k<i?'on':''} ${k===i?'on now':''}"></i>`).join("");
+  let body;
+  if (i < Q.length){
+    const q = Q[i];
+    body = `<div class="qnum">${T.qnum(i+1, TOTAL)}</div><h2>${q.q}</h2>
+      <div class="opts ${q.cols3?'cols3':''}" role="group" aria-label="${esc(q.q)}">${q.o.map((o,idx) => `<button class="opt" data-v="${idx}" aria-pressed="${st.a[q.k]===idx}">${o[0]?`<span aria-hidden="true">${o[0]}</span>`:""}${o[st.lang === "tr" ? 1 : 2]}</button>`).join("")}</div>`;
+  } else {
+    body = `<div class="qnum">${T.qnum(TOTAL, TOTAL)} · ${T.optional}</div><h2>${T.q(P).drop}</h2>
+      <div class="field" style="margin-top:0"><input id="drop" maxlength="22" placeholder="${T.dropPh}" value="${esc(st.drop)}">
+      <p class="err" id="drop-err" hidden></p></div>
+      <div class="spacer"></div>
+      <div style="display:grid;gap:10px"><button class="btn btn-primary" id="print">${T.print}</button><button class="btn btn-ghost" id="skip">${T.skip}</button></div>`;
+  }
+  $("#s-q").innerHTML = `<div class="qtop"><button class="icon" id="back" aria-label="${T.back}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button><div class="dots" aria-hidden="true">${dots}</div><span style="width:42px"></span></div>
+    <div class="qcard qin-r" style="display:flex;flex-direction:column;flex:1">${body}</div>`;
+  if (i === Q.length){
+    $("#drop").addEventListener("input", e => { const bad = screenText(e.target.value); $("#drop-err").hidden = !bad; if (bad) $("#drop-err").textContent = errText(bad); $("#print").disabled = !!bad; st.drop = e.target.value.trim(); });
+  }
+}
+
+/* ---------- receipt ---------- */
+function code(){ const s = JSON.stringify([st.name,st.sign,st.a,st.drop,R.y,R.m,st.mode]); let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  const al = "ABCDEFGHJKLMNPRSTUVYZ23456789"; let out = ""; h = h >>> 0; for (let k=0;k<4;k++){ out += al[h % al.length]; h = Math.floor(h/al.length) + 7919*k; } return "KSMT-" + out; }
+function rows(){ return Q.slice(0,6).map(q => [q.label, up(optLabel(q.k, st.a[q.k]))]); }
+const balanceText = () => st.a.word != null ? T.balance(P)[st.a.word] : T.balance(P)[5];
+const wantWord = () => up(optLabel("want", st.a.want != null ? st.a.want : 0));
+const signName = () => st.sign != null ? up(SIGNS[st.sign][st.lang === "tr" ? 1 : 2]) : "";
+function receiptHTML(){
+  const name = st.name ? up(st.name) : T.guest;
+  return `<div class="receipt"><div class="c t">${T.machine}</div>
+      <div class="c" style="opacity:.74;font-size:12px">${P.head} · No ${String(st.no).padStart(5,"0")}</div><hr>
+      <div class="kv"><span>${T.customer}</span><span>${esc(name)}</span></div>
+      ${st.sign != null ? `<div class="kv"><span>${T.sign}</span><span>${signName()}</span></div>` : ""}<hr>
+      ${rows().map(([k,v]) => `<div class="kv"><span>${k}</span><span>${esc(v)}</span></div>`).join("")}
+      ${st.drop ? `<div class="kv"><span>${T.returned}</span><span>“${esc(st.drop)}”</span></div>` : ""}<hr>
+      <div class="kv"><span>${T.subtotal}</span><span>${T.days(R.days)}</span></div>
+      <div class="kv"><span>${T.vat}</span><span>${T.vatVal}</span></div>
+      <div class="kv total"><span>${T.balanceL}</span><span>${esc(balanceText())}</span></div>
+      <hr><div class="c" style="font-size:12px;opacity:.74">${T.game}</div></div>
+    <div class="tear">✂</div>
+    <div class="coupon"><div class="cin"><div class="ck">${P.couponPeriod}<br>${T.couponWord}</div>
+      <div style="font-size:12px;margin-top:6px">${T.validFor}</div>
+      <div class="cw">${wantWord()}</div>
+      <div style="font-size:12px">${T.validEnd}</div><hr>
+      <div class="use">${esc(T.use[st.a.want != null ? st.a.want : 0])}</div>
+      <div style="font-size:12px;opacity:.74;margin-top:8px">${T.expires}: ${T.expiry(R)} · ${code()}</div>
+      <div class="seal" aria-hidden="true">✦<br>${T.seal[0]}<br>${T.seal[1]}</div></div></div>`;
+}
+function startPrint(){
+  st.no = 1 + Math.floor(Math.random()*99999);
+  setTimeout(() => scheduleReminders(true), 5200);
+  printScreen(receiptHTML(), {kind:"period"});
+}
+let PRINT = {kind:"period"};
+function printScreen(html, info){
+  PRINT = info;
+  const dur = matchMedia("(prefers-reduced-motion: reduce)").matches ? 10 : (info.instant ? 10 : 3200);
+  $("#s-print").innerHTML = `<div class="printer printing" id="printer"><div class="slotbox"><span class="lbl">${T.machine}</span><span class="leds"><i></i><i></i><i></i></span></div><div class="slot"></div></div>
+    <div class="paperclip"><div class="paper print" style="--dur:${dur}ms">${html}</div></div>
+    <div class="after" id="after">
+      <button class="btn btn-primary" id="share">${T.shareBtn}</button>
+      <button class="btn btn-ghost" id="again">${info.kind === "goal" ? T.aAgain : T.again}</button>
+      <p class="fine" style="margin-top:4px">a Massalverse machine</p>
+    </div>`;
+  show("s-print");
+  setTimeout(() => printSound(dur - 300), 200);
+  setTimeout(() => { tone(110,.18,.15,"sine",55); try{ navigator.vibrate && navigator.vibrate([20,40,30]); }catch(e){} }, dur + 150);
+  setTimeout(() => { $("#printer").classList.remove("printing"); $("#after").classList.add("show"); }, dur + 600);
+}
+
+/* ---------- story image (1080 × 1920) ---------- */
+async function storyImage(){
+  try{ await Promise.all(['700 30px "JetBrains Mono"','400 30px "JetBrains Mono"','700 60px "Cormorant Garamond"','600 30px "Plus Jakarta Sans"'].map(f => document.fonts.load(f))); }catch(e){}
+  const W = 1080, H = 1920, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const c = cv.getContext("2d");
+  const g = c.createRadialGradient(W/2, 0, 50, W/2, 300, 1500); g.addColorStop(0,"#0E2F55"); g.addColorStop(.5,"#071A3A"); g.addColorStop(1,"#061430"); c.fillStyle = g; c.fillRect(0,0,W,H);
+  for (let k=0;k<220;k++){ c.globalAlpha = Math.random()*.7+.15; c.fillStyle = Math.random() < .1 ? "#F2D479" : "#E2F6F2"; c.beginPath(); c.arc(Math.random()*W, Math.random()*H, Math.random()*2.2+.4, 0, 6.28); c.fill(); }
+  storyClouds(c, W, H);
+  c.globalAlpha = 1;
+  c.fillStyle = "#ECFBF7"; let fs = 104; c.font = `700 ${fs}px "Cormorant Garamond"`; while (c.measureText(P.story).width > W - 168 && fs > 48){ fs -= 4; c.font = `700 ${fs}px "Cormorant Garamond"`; } c.fillText(P.story, 84, 220);
+  c.fillStyle = "#E8C77A"; c.fillRect(88, 250, 120, 6);
+  const x = 130, w = W - 260, pad = 46; let y = 330;
+  const lines = []; const kv = (k,v,b) => lines.push({k,v,b}); const hr = () => lines.push({hr:1});
+  lines.push({center:T.receiptTitle, big:1}); lines.push({center:`${P.head} · No ${String(st.no).padStart(5,"0")}`, small:1}); hr();
+  kv(T.customer, st.name ? up(st.name) : T.guest); if (st.sign != null) kv(T.sign, signName()); hr();
+  for (const [k,v] of rows()) kv(k, v); if (st.drop) kv(T.returned, "“" + st.drop + "”"); hr();
+  kv(T.vat, T.vatVal); kv(T.balanceL, balanceText(), 1);
+  const lh = 50; let hgt = pad*2; for (const l of lines) hgt += l.hr ? 30 : l.big ? 64 : lh;
+  c.save(); c.shadowColor = "rgba(0,0,0,.5)"; c.shadowBlur = 50; c.shadowOffsetY = 20; c.fillStyle = "#FBF6EA"; c.fillRect(x, y, w, hgt); c.restore();
+  let yy = y + pad + 30;
+  for (const l of lines){
+    if (l.hr){ c.strokeStyle = "#CFC6B4"; c.lineWidth = 3; c.setLineDash([12,10]); c.beginPath(); c.moveTo(x+pad, yy-8); c.lineTo(x+w-pad, yy-8); c.stroke(); c.setLineDash([]); yy += 30; continue; }
+    c.fillStyle = "#221E2E";
+    if (l.center){ c.textAlign = "center"; c.font = l.big ? '700 40px "JetBrains Mono"' : '400 26px "JetBrains Mono"'; c.globalAlpha = l.small ? .7 : 1; c.fillText(l.center, x + w/2, yy); c.globalAlpha = 1; c.textAlign = "left"; yy += l.big ? 64 : lh; continue; }
+    c.font = '400 28px "JetBrains Mono"'; c.globalAlpha = .7; c.fillText(l.k, x+pad, yy); c.globalAlpha = 1;
+    c.font = '700 28px "JetBrains Mono"'; c.textAlign = "right"; let v = String(l.v); const maxW = w - pad*2 - c.measureText(l.k).width - 40;
+    while (c.measureText(v).width > maxW && v.length > 4) v = v.slice(0,-2) + "…"; c.fillText(v, x+w-pad, yy); c.textAlign = "left"; yy += lh;
+  }
+  c.fillStyle = "#FBF6EA"; const zb = y + hgt; for (let zx = x; zx < x+w; zx += 28){ c.beginPath(); c.moveTo(zx, zb); c.lineTo(zx+14, zb+14); c.lineTo(zx+28, zb); c.fill(); }
+  const cy = zb + 70, ch = 400;
+  c.strokeStyle = "rgba(236,240,255,.4)"; c.setLineDash([14,12]); c.lineWidth = 3; c.beginPath(); c.moveTo(x, cy-34); c.lineTo(x+w, cy-34); c.stroke(); c.setLineDash([]);
+  c.fillStyle = "#B4C9D4"; c.font = '400 30px "JetBrains Mono"'; c.fillText("✂", x - 50, cy - 24);
+  c.save(); c.shadowColor = "rgba(0,0,0,.5)"; c.shadowBlur = 50; c.shadowOffsetY = 20; c.fillStyle = "#FBF6EA"; c.fillRect(x, cy, w, ch); c.restore();
+  c.strokeStyle = "#CFC6B4"; c.setLineDash([10,8]); c.strokeRect(x+22, cy+22, w-44, ch-44); c.setLineDash([]);
+  c.textAlign = "center"; c.fillStyle = "#221E2E";
+  c.globalAlpha = .75; c.font = '700 26px "JetBrains Mono"'; c.fillText(`${P.couponPeriod} ${T.couponWord}`, W/2, cy + 80); c.globalAlpha = 1;
+  c.font = '400 28px "JetBrains Mono"'; c.fillText(T.validFor, W/2, cy + 135);
+  let cw = 100; c.font = `700 ${cw}px "Cormorant Garamond"`; while (c.measureText(wantWord()).width > w - 120 && cw > 44){ cw -= 4; c.font = `700 ${cw}px "Cormorant Garamond"`; } c.fillText(wantWord(), W/2, cy + 230);
+  c.font = '400 28px "JetBrains Mono"'; c.fillText(T.validEnd, W/2, cy + 285);
+  c.globalAlpha = .7; c.font = '400 22px "JetBrains Mono"'; c.fillText(`${T.expires}: ${T.expiry(R)} · ` + code(), W/2, cy + 345); c.globalAlpha = 1;
+  c.save(); c.translate(x + w - 70, cy + 64); c.rotate(-.25); c.strokeStyle = "#A33E1E"; c.lineWidth = 5; c.beginPath(); c.arc(0,0,78,0,6.28); c.stroke(); c.lineWidth = 2; c.beginPath(); c.arc(0,0,66,0,6.28); c.stroke();
+  c.fillStyle = "#A33E1E"; c.font = '700 20px "JetBrains Mono"'; c.fillText("✦", 0, -22); c.fillText(T.seal[0], 0, 8); c.fillText(T.seal[1], 0, 36); c.restore();
+  c.textAlign = "center"; c.fillStyle = "#ECFBF7"; c.font = '600 32px "Plus Jakarta Sans"'; c.fillText(T.storyAsk, W/2, H - 150);
+  c.fillStyle = "#B4C9D4"; c.font = '400 24px "JetBrains Mono"'; c.fillText(T.storyFoot, W/2, H - 100);
+  return cv;
+}
+async function openShare(){
+  const cv = PRINT.kind === "goal" ? await goalStory(PRINT.goal) : await storyImage(), url = cv.toDataURL("image/png");
+  $("#sheet").innerHTML = `<img src="${url}" alt="${T.sheetAlt}">
+    ${NATIVE ? "" : `<p>${T.sheetText}</p>`}
+    <div class="row"><button class="btn btn-primary" id="do-share">${T.doShare}</button><button class="btn btn-ghost" id="close-sheet">${T.close}</button></div>`;
+  $("#sheet").hidden = false;
+  $("#do-share").onclick = async () => {
+    if (NATIVE){ try{ await nativeShare(cv, PRINT.kind === "goal" ? T.aShare(PRINT.goal.title) : P.share, T.file); }catch(e){ if (!/cancel/i.test(String(e && (e.message || e)))) toast(T.noShare); } return; }
+    try{
+      const blob = await new Promise(r => cv.toBlob(r, "image/png"));
+      const file = new File([blob], T.file, {type:"image/png"});
+      if (navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], text:PRINT.kind === "goal" ? T.aShare(PRINT.goal.title) : P.share}); return; }
+    }catch(e){ if (e && e.name === "AbortError") return; }
+    toast(T.noShare);
+  };
+  $("#close-sheet").onclick = () => { $("#sheet").hidden = true; };
+}
+
+
+/* ---------- hedefler ---------- */
+const EMO = ["🎯","🎸","🏋️","🧘","✍️","🎨","🌱","💪","❤️","🚀","🎓","🏠"];
+const GKEY = "kismet.goals";
+let goals = (() => { try{ return JSON.parse(localStorage.getItem(GKEY)) || []; }catch(e){ return []; } })();
+const saveGoals = () => { try{ localStorage.setItem(GKEY, JSON.stringify(goals)); }catch(e){} scheduleReminders(true); };
+let gf = null;          // açık form taslağı
+let delAsk = null;      // silme onayı bekleyen hedef
+const DAY = 864e5;
+const endOf = kind => kind === "year" ? new Date(NOW.getFullYear(), 11, 31) : new Date(NOW.getFullYear(), NOW.getMonth() + 1, 0);
+const daysBetween = (a, b) => Math.round((new Date(b).setHours(0,0,0,0) - new Date(a).setHours(0,0,0,0)) / DAY);
+const fmtNum = n => (Math.round(n * 10) / 10).toLocaleString(T.loc === "tr" ? "tr-TR" : "en-US");
+
+function goalCard(g){
+  const pct = g.target ? Math.min(100, g.progress / g.target * 100) : (g.doneAt ? 100 : 0);
+  if (g.doneAt) return `<div class="goal done"><div class="gt"><span class="ge">${g.emoji}</span><div style="min-width:0"><div class="gn">${esc(g.title)}</div>
+      <div class="gd">${T.aEnd}: ${T.fmtDate(new Date(g.doneAt))}</div></div></div>
+      <div class="gact"><button class="btn btn-ghost" data-gview="${g.id}">${T.gView}</button></div></div>`;
+  const left = daysBetween(Date.now(), g.deadline);
+  return `<div class="goal"><div class="gt"><span class="ge">${g.emoji}</span><div style="min-width:0"><div class="gn">${esc(g.title)}</div>
+      <div class="gd">${T.gLast}: ${T.fmtDate(new Date(g.deadline))} · ${T.gLeft(left)}</div></div></div>
+    ${g.target ? `<div class="gbar" aria-hidden="true"><i style="width:${pct}%"></i></div>
+    <div class="gprog"><span class="gnum">${fmtNum(g.progress)} / ${fmtNum(g.target)} ${esc(g.unit || "")}</span>
+      <span class="step"><button data-gstep="${g.id}" data-d="-1" aria-label="−">−</button><button data-gstep="${g.id}" data-d="1" aria-label="+">+</button></span></div>` : ""}
+    <div class="gact"><button class="btn btn-primary" data-gdone="${g.id}">${T.gDid}</button>
+      <button class="btn btn-ghost btn-small" data-gdel="${g.id}">${delAsk === g.id ? T.gDelSure : T.gDel}</button></div></div>`;
+}
+function renderGoals(){
+  const act = goals.filter(g => !g.doneAt), done = goals.filter(g => g.doneAt).sort((a,b) => b.doneAt - a.doneAt);
+  const form = gf ? `<div class="gform" id="gform">
+      <div style="font-weight:700;font-family:var(--f-display);font-size:24px">${gf.emoji} ${T.fNew}</div>
+      ${gf.custom ? `<div style="display:grid;gap:6px"><label>${T.fIcon}</label><div class="emo" role="radiogroup" aria-label="${T.fIcon}">${EMO.map(em => `<button role="radio" data-gemo="${em}" aria-checked="${gf.emoji===em}">${em}</button>`).join("")}</div></div>` : ""}
+      <div style="display:grid;gap:6px"><label for="g-name">${T.fName}</label><input id="g-name" maxlength="40" placeholder="${T.fNamePh}" value="${esc(gf.title)}"><p class="err" id="g-err" hidden></p></div>
+      <div style="display:grid;gap:6px"><label for="g-target">${T.fTarget}</label><div class="row2"><input id="g-target" inputmode="decimal" placeholder="${T.fTargetPh}" value="${gf.target || ""}"><input id="g-unit" maxlength="12" placeholder="${T.fUnitPh}" value="${esc(gf.unit || "")}"></div></div>
+      <div style="display:grid;gap:6px"><label>${T.fWhen}</label><div class="dl">${["month","year"].map((k,i) => `<button data-gwhen="${k}" aria-pressed="${gf.when===k}">${T.fWhenOpts[i]}</button>`).join("")}</div></div>
+      <div class="gact"><button class="btn btn-primary" id="g-add">${T.fAdd}</button><button class="btn btn-ghost btn-small" id="g-cancel">${T.fCancel}</button></div></div>` : "";
+  $("#s-goals").innerHTML = `
+    <div class="g-head"><h1>${T.gTitle}</h1><p class="g-sub">${T.gSub(goals.length, done.length)}</p></div>
+    ${gf ? form : `<button class="btn btn-primary" data-gtpl="custom" style="margin-top:18px">＋ ${T.gWrite}</button>`}
+    ${act.length ? `<div class="g-sec">${T.gActive}</div><div class="glist">${act.map(goalCard).join("")}</div>` : ""}
+    ${done.length ? `<div class="g-sec">${T.gDone}</div><div class="glist">${done.map(goalCard).join("")}</div>` : ""}
+    <div class="g-sec">${T.gQuick}</div>
+    <div class="tpl">${T.tpl.map((t,i) => `<button data-gtpl="${i}"><span aria-hidden="true">${t[0]}</span>${t[1]}</button>`).join("")}</div>
+    ${goals.length ? "" : `<div class="g-empty">${T.gEmpty}</div>`}
+    <p class="fine" style="margin-top:22px">Kısmet · a Massalverse machine</p>`;
+  if (gf){
+    const nm = $("#g-name");
+    nm.addEventListener("input", e => { gf.title = e.target.value; const bad = screenText(gf.title); $("#g-err").hidden = !bad; if (bad) $("#g-err").textContent = errText(bad); $("#g-add").disabled = !!bad || !gf.title.trim(); });
+    $("#g-target").addEventListener("input", e => { gf.target = e.target.value; });
+    $("#g-unit").addEventListener("input", e => { gf.unit = e.target.value; });
+    $("#g-add").disabled = !gf.title.trim() || !!screenText(gf.title);
+  }
+}
+function openGoals(){ build(); renderGoals(); show("s-goals"); }
+
+function goalReceiptHTML(g){
+  const dur = Math.max(1, daysBetween(g.created, g.doneAt));
+  return `<div class="receipt"><div class="c t">${T.machine}</div>
+      <div class="c" style="opacity:.74;font-size:12px">${T.aTitle} · No ${String(g.no).padStart(5,"0")}</div><hr>
+      <div class="c" style="opacity:.74;font-size:12px">${T.aGoal}</div>
+      <div class="win">${g.emoji} ${esc(up(g.title))}</div><hr>
+      ${st.name ? `<div class="kv"><span>${T.customer}</span><span>${esc(up(st.name))}</span></div>` : ""}
+      <div class="kv"><span>${T.aStart}</span><span>${T.fmtDate(new Date(g.created))}</span></div>
+      <div class="kv"><span>${T.aEnd}</span><span>${T.fmtDate(new Date(g.doneAt))}</span></div>
+      <div class="kv"><span>${T.aDur}</span><span>${T.days(dur)}</span></div>
+      ${g.target ? `<div class="kv"><span>${T.aProg}</span><span>${fmtNum(g.target)} / ${fmtNum(g.target)} ${esc(up(g.unit || ""))}</span></div>` : ""}<hr>
+      <div class="kv"><span>${T.aWill}</span><span>${T.aWillV}</span></div>
+      <div class="kv"><span>${T.aDelay}</span><span>${T.aDelayV}</span></div>
+      <div class="kv"><span>${T.vat}</span><span>${T.vatVal}</span></div>
+      <div class="bigseal">${T.aSeal}</div>
+      <p class="c" style="margin:8px 0 0;font-size:13px">${T.aMsg}</p>
+      <hr><div class="c" style="font-size:12px;opacity:.74">${T.game}</div></div>`;
+}
+function printGoal(g, instant){ printScreen(goalReceiptHTML(g), {kind:"goal", goal:g, instant}); }
+
+async function goalStory(g){
+  try{ await Promise.all(['700 30px "JetBrains Mono"','400 30px "JetBrains Mono"','700 60px "Cormorant Garamond"','600 30px "Plus Jakarta Sans"'].map(f => document.fonts.load(f))); }catch(e){}
+  const W = 1080, H = 1920, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const c = cv.getContext("2d");
+  const gr = c.createRadialGradient(W/2, 0, 50, W/2, 300, 1500); gr.addColorStop(0,"#0E2F55"); gr.addColorStop(.5,"#071A3A"); gr.addColorStop(1,"#061430"); c.fillStyle = gr; c.fillRect(0,0,W,H);
+  for (let k=0;k<220;k++){ c.globalAlpha = Math.random()*.7+.15; c.fillStyle = Math.random() < .1 ? "#F2D479" : "#E2F6F2"; c.beginPath(); c.arc(Math.random()*W, Math.random()*H, Math.random()*2.2+.4, 0, 6.28); c.fill(); }
+  storyClouds(c, W, H);
+  c.globalAlpha = 1; c.fillStyle = "#ECFBF7"; let fs = 92; c.font = `700 ${fs}px "Cormorant Garamond"`; while (c.measureText(T.aStoryTop).width > W - 168 && fs > 44){ fs -= 4; c.font = `700 ${fs}px "Cormorant Garamond"`; } c.fillText(T.aStoryTop, 84, 220);
+  c.fillStyle = "#E8C77A"; c.fillRect(88, 250, 120, 6);
+  const x = 130, w = W - 260, pad = 50, y = 330, dur = Math.max(1, daysBetween(g.created, g.doneAt));
+  const rowsG = [[T.aStart, T.fmtDate(new Date(g.created))],[T.aEnd, T.fmtDate(new Date(g.doneAt))],[T.aDur, T.days(dur)]];
+  if (g.target) rowsG.push([T.aProg, `${fmtNum(g.target)} / ${fmtNum(g.target)} ${up(g.unit || "")}`]);
+  rowsG.push(null,[T.aWill, T.aWillV],[T.aDelay, T.aDelayV],[T.vat, T.vatVal]);
+  // title wrap
+  c.font = '700 62px "Cormorant Garamond"'; const words = (g.emoji + " " + up(g.title)).split(" "), tl = []; let cur = "";
+  for (const wd of words){ const t = cur ? cur + " " + wd : wd; if (c.measureText(t).width > w - pad*2 && cur){ tl.push(cur); cur = wd; } else cur = t; } if (cur) tl.push(cur);
+  const hgt = pad*2 + 64 + 40 + tl.length*68 + 40 + rowsG.length*50 + 230;
+  c.save(); c.shadowColor = "rgba(0,0,0,.5)"; c.shadowBlur = 50; c.shadowOffsetY = 20; c.fillStyle = "#FBF6EA"; c.fillRect(x, y, w, hgt); c.restore();
+  let yy = y + pad + 40; c.textAlign = "center"; c.fillStyle = "#221E2E";
+  c.font = '700 40px "JetBrains Mono"'; c.fillText(T.aTitle, W/2, yy); yy += 64;
+  c.globalAlpha = .7; c.font = '400 26px "JetBrains Mono"'; c.fillText(T.aGoal, W/2, yy); c.globalAlpha = 1; yy += 66;
+  c.font = '700 62px "Cormorant Garamond"'; for (const t of tl){ c.fillText(t, W/2, yy); yy += 68; }
+  c.textAlign = "left"; yy += 10;
+  const dash = () => { c.strokeStyle = "#CFC6B4"; c.lineWidth = 3; c.setLineDash([12,10]); c.beginPath(); c.moveTo(x+pad, yy-20); c.lineTo(x+w-pad, yy-20); c.stroke(); c.setLineDash([]); };
+  dash(); yy += 30;
+  for (const r of rowsG){ if (!r){ dash(); yy += 30; continue; }
+    c.font = '400 28px "JetBrains Mono"'; c.globalAlpha = .7; c.fillText(r[0], x+pad, yy); c.globalAlpha = 1;
+    c.font = '700 28px "JetBrains Mono"'; c.textAlign = "right"; c.fillText(r[1], x+w-pad, yy); c.textAlign = "left"; yy += 50; }
+  c.save(); c.translate(W/2, yy + 70); c.rotate(-.06); c.strokeStyle = "#A33E1E"; c.lineWidth = 5; c.font = '700 40px "JetBrains Mono"';
+  const sw = c.measureText(T.aSeal).width + 60; c.strokeRect(-sw/2, -48, sw, 84); c.lineWidth = 2; c.strokeRect(-sw/2 + 8, -40, sw - 16, 68);
+  c.fillStyle = "#A33E1E"; c.textAlign = "center"; c.fillText(T.aSeal, 0, 6); c.restore();
+  c.fillStyle = "#FBF6EA"; const zb = y + hgt; for (let zx = x; zx < x+w; zx += 28){ c.beginPath(); c.moveTo(zx, zb); c.lineTo(zx+14, zb+14); c.lineTo(zx+28, zb); c.fill(); }
+  c.textAlign = "center"; c.fillStyle = "#ECFBF7"; c.font = '600 32px "Plus Jakarta Sans"'; c.fillText(T.aStoryAsk, W/2, H - 150);
+  c.fillStyle = "#B4C9D4"; c.font = '400 24px "JetBrains Mono"'; c.fillText(T.storyFoot, W/2, H - 100);
+  return cv;
+}
+
+document.addEventListener("click", e => {
+  const tab = e.target.closest("[data-tab]");
+  if (tab){ tap(); if (tab.dataset.tab === "goals") openGoals(); else { renderIntro(); show("s-intro"); } return; }
+  const tp = e.target.closest("[data-gtpl]");
+  if (tp){ tap(); const custom = tp.dataset.gtpl === "custom", t = custom ? ["🎯","",null,"",1] : T.tpl[+tp.dataset.gtpl];
+    gf = {emoji:t[0], title:t[1], target:t[2] || "", unit:t[3], step:t[4], when:"year", custom}; delAsk = null; renderGoals();
+    $("#s-goals").scrollTop = 0; setTimeout(() => { const n = $("#g-name"); if (n && !gf.title) n.focus(); }, 50); return; }
+  const em = e.target.closest("[data-gemo]");
+  if (em){ tap(); gf.emoji = em.dataset.gemo; em.parentElement.querySelectorAll("button").forEach(b => b.setAttribute("aria-checked", b === em)); const h = $("#gform > div"); if (h) h.textContent = gf.emoji + " " + T.fNew; return; }
+  const wh = e.target.closest("[data-gwhen]");
+  if (wh){ tap(); gf.when = wh.dataset.gwhen; wh.parentElement.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b === wh)); return; }
+  const btn = e.target.closest("button"), id = btn && btn.id;
+  if (id === "g-cancel"){ gf = null; renderGoals(); return; }
+  if (id === "g-add"){
+    const title = gf.title.trim(); if (!title || screenText(title) || screenText(gf.unit || "")) return;
+    const target = parseFloat(String(gf.target).replace(",", ".")) || 0;
+    goals.unshift({id:"g" + Date.now().toString(36), emoji:gf.emoji, title, target:target > 0 ? target : 0, unit:(gf.unit || "").trim(), step:gf.step || (target >= 100 ? Math.round(target/20) : 1),
+      progress:0, deadline:+endOf(gf.when), created:Date.now(), doneAt:null, no:0});
+    saveGoals(); gf = null; renderGoals(); toast(T.added); return; }
+  const stp = e.target.closest("[data-gstep]");
+  if (stp){ const g = goals.find(x => x.id === stp.dataset.gstep); if (!g) return; tap();
+    g.progress = Math.max(0, Math.min(g.target, Math.round((g.progress + (+stp.dataset.d) * g.step) * 100) / 100)); saveGoals(); renderGoals();
+    if (g.progress >= g.target){ const b = document.querySelector(`[data-gdone="${g.id}"]`); if (b) b.focus(); }
+    return; }
+  const dn = e.target.closest("[data-gdone]");
+  if (dn){ const g = goals.find(x => x.id === dn.dataset.gdone); if (!g) return; audio(); tone(660,.12,.05);
+    g.doneAt = Date.now(); if (g.target) g.progress = g.target; g.no = 1 + Math.floor(Math.random()*99999); saveGoals(); printGoal(g, false); return; }
+  const gv = e.target.closest("[data-gview]");
+  if (gv){ const g = goals.find(x => x.id === gv.dataset.gview); if (g) printGoal(g, true); return; }
+  const gd = e.target.closest("[data-gdel]");
+  if (gd){ const gid = gd.dataset.gdel; if (delAsk === gid){ goals = goals.filter(x => x.id !== gid); delAsk = null; saveGoals(); } else delAsk = gid; renderGoals(); return; }
+});
+
+/* ---------- events ---------- */
+document.addEventListener("click", e => {
+  const lg = e.target.closest("[data-lang]");
+  if (lg){ tap(); if (st.lang !== lg.dataset.lang){ st.lang = lg.dataset.lang; try{ localStorage.setItem("kismet.lang", st.lang); }catch(err){} renderIntro(); } return; }
+  const md = e.target.closest("[data-mode]");
+  if (md){ tap(); if (st.mode !== md.dataset.mode){ st.mode = md.dataset.mode; st.a = {}; renderIntro(); } return; }
+  const sign = e.target.closest("[data-sign]");
+  if (sign){ tap(); const v = +sign.dataset.sign; st.sign = st.sign === v ? null : v; document.querySelectorAll("[data-sign]").forEach(b => b.setAttribute("aria-pressed", +b.dataset.sign === st.sign)); return; }
+  const opt = e.target.closest(".opt");
+  if (opt){ tap(); const q = Q[st.i]; st.a[q.k] = +opt.dataset.v; opt.parentElement.querySelectorAll(".opt").forEach(b => b.setAttribute("aria-pressed", b === opt));
+    setTimeout(() => { st.i++; renderQ(); }, 280); return; }
+  const id = e.target.closest("button") && e.target.closest("button").id;
+  if (id === "go"){ if (screenText(st.name)) return; audio(); tone(660,.12,.05); st.i = 0; renderQ(); show("s-q"); }
+  if (id === "back"){ tap(); if (st.i === 0){ renderIntro(); show("s-intro"); } else { st.i--; renderQ(); } }
+  if (id === "print"){ if (screenText(st.drop)) return; startPrint(); }
+  if (id === "skip"){ st.drop = ""; startPrint(); }
+  if (id === "share") openShare();
+  if (id === "again"){ if (PRINT.kind === "goal"){ openGoals(); return; } st = {...st, a:{}, drop:"", i:0, no:0}; renderIntro(); show("s-intro"); }
+});
+
+renderIntro(); show("s-intro");
+scheduleReminders(false);
+})();
+
+</script>
+
+</body>
+</html>
